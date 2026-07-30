@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+from app.api.router import api_router
+
+app = FastAPI(title="Forge Orchestrator")
+app.include_router(api_router)
 
 
 @app.get("/health")
