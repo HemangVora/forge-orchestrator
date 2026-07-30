@@ -68,6 +68,9 @@ def test_payload_carries_capability_never_a_provider(
     payload = sent["args"][0]
     assert payload["required_capability"] == "coding"
     assert "provider" not in payload, "orchestrator must stay provider-blind"
+    # Hardcoding "main" broke every master-based repo in production. The
+    # runtime resolves the real default branch from the repository mirror.
+    assert payload["base_branch"] is None, "orchestrator must not assume a branch name"
 
 
 def test_orchestrator_tree_does_not_import_runtime_code():
