@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -18,6 +18,8 @@ class Task(Base):
     stage = Column(String, nullable=True)
     progress = Column(Integer, nullable=False, default=0)
     required_capability = Column(String, nullable=False, default="coding")
+    branch = Column(String, nullable=True)
+    result = Column(JSONB, nullable=True)
     worker_id = Column(UUID(as_uuid=True), ForeignKey("workers.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(

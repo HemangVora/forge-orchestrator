@@ -27,14 +27,38 @@ class SchedulerService:
         self.events.transition(task, status="assigned", stage="planning", progress=10)
         self.db.commit()
 
-        from workers.mock_worker import execute_mock_task
-
-        execute_mock_task.delay(str(task.id), worker.hostname)
+        self._dispatch(task)
         return {
             "task_id": str(task.id),
             "scheduled": True,
             "worker": worker.hostname,
         }
+
+    def _dispatch(self, task: Task) -> None:
+        """Hand off to forge-worker-runtime by task NAME, never by import.
+
+        The orchestrator must not import runtime code — that is the seam that
+        lets the runtime live in a separate repo and deploy independently.
+        Note the payload carries a capability, never a provider name: which
+        provider actually runs is entirely the runtime's business.
+        """
+        from app.queue.celery_app import celery_app
+
+        celery_app.send_task(
+            "runtime.execute_task",
+            args=[
+                {
+                    "schema_version": 1,
+                    "task_id": str(task.id),
+                    "repository": task.repository,
+                    "prompt": task.prompt,
+                    "required_capability": task.required_capability,
+                    "base_branch": "main",
+                    "policies": {},
+                }
+            ],
+            queue="forge.runtime",
+        )
 
     def _find_worker(self, capability: str) -> Worker | None:
         workers = (

@@ -13,6 +13,10 @@ class Settings(BaseSettings):
         default="redis://localhost:6379/0",
         validation_alias="REDIS_URL",
     )
+    forge_shared_secret: str = Field(
+        default="dev-secret-change-me",
+        validation_alias="FORGE_SHARED_SECRET",
+    )
 
 
 settings = Settings()

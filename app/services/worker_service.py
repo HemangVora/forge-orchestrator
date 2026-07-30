@@ -20,12 +20,16 @@ class WorkerService:
                 capabilities=payload.capabilities,
                 status="online",
                 last_heartbeat=now,
+                worker_metadata=payload.manifest or None,
             )
             self.db.add(worker)
         else:
             worker.capabilities = payload.capabilities
             worker.status = "online"
             worker.last_heartbeat = now
+            # Manifests make mismatched worker environments debuggable.
+            if payload.manifest:
+                worker.worker_metadata = payload.manifest
 
         self.db.commit()
         self.db.refresh(worker)

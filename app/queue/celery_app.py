@@ -6,7 +6,7 @@ celery_app = Celery(
     "forge_orchestrator",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.queue.tasks", "workers.mock_worker"],
+    include=["app.queue.tasks"],
 )
 
 celery_app.conf.update(
