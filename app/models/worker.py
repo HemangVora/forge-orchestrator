@@ -16,6 +16,7 @@ class Worker(Base):
     capabilities = Column(JSONB, nullable=False, default=list)
     status = Column(String, nullable=False, default="online")
     last_heartbeat = Column(DateTime, default=datetime.utcnow, nullable=False)
+    worker_metadata = Column(JSONB, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     tasks = relationship("Task", back_populates="worker")

@@ -6,3 +6,5 @@ alembic
 pydantic-settings
 celery[redis]
 redis
+pytest
+httpx
