@@ -53,7 +53,10 @@ class SchedulerService:
                     "repository": task.repository,
                     "prompt": task.prompt,
                     "required_capability": task.required_capability,
-                    "base_branch": "main",
+                    # Omitted deliberately: the runtime reads the repository's
+                    # real default branch from its mirror. Hardcoding "main"
+                    # here broke every master-based repo.
+                    "base_branch": None,
                     "policies": {},
                 }
             ],
