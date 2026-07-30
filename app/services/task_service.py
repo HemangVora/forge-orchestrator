@@ -6,12 +6,15 @@ from sqlalchemy.orm import Session
 from app.domain.capabilities import Capability
 from app.models.task import Task
 from app.models.task_event import TaskEvent
+from app.queue.tasks import enqueue_task
 from app.schemas.task import TaskCreateRequest, TaskCreateResponse, TaskStatusResponse
+from app.services.event_service import EventService
 
 
 class TaskService:
     def __init__(self, db: Session):
         self.db = db
+        self.events = EventService(db)
 
     def create_task(self, payload: TaskCreateRequest) -> TaskCreateResponse:
         task = Task(
@@ -25,10 +28,12 @@ class TaskService:
         self.db.add(task)
         self.db.flush()
 
-        self._record_event(task, status="queued", stage="queued", progress=0)
+        self.events.transition(task, status="queued", stage="queued", progress=0)
 
         self.db.commit()
         self.db.refresh(task)
+
+        schedule_task.delay(str(task.id))
 
         return TaskCreateResponse(task_id=task.id, status=task.status)
 
@@ -42,26 +47,3 @@ class TaskService:
             progress=task.progress,
             stage=task.stage,
         )
-
-    def _record_event(
-        self,
-        task: Task,
-        *,
-        status: str,
-        stage: str | None,
-        progress: int,
-        message: str | None = None,
-    ) -> TaskEvent:
-        event = TaskEvent(
-            task_id=task.id,
-            status=status,
-            stage=stage,
-            progress=progress,
-            message=message,
-        )
-        self.db.add(event)
-        task.status = status
-        task.stage = stage
-        task.progress = progress
-        task.updated_at = datetime.utcnow()
-        return event
