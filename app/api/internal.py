@@ -1,9 +1,9 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.security import require_token
 from app.db.session import get_db
 from app.models.task import Task
 from app.schemas.internal import ProgressEventIn, TaskOutcomeIn
@@ -12,14 +12,6 @@ from app.services.event_service import EventService
 router = APIRouter(prefix="/internal", tags=["internal"])
 
 TERMINAL_STATUSES = {"done", "failed", "cancelled"}
-
-
-def require_token(x_forge_token: str = Header(default="")) -> None:
-    """Shared-secret gate. These endpoints are for workers, not for users."""
-    if x_forge_token != settings.forge_shared_secret:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid worker token"
-        )
 
 
 @router.post("/tasks/{task_id}/events", status_code=status.HTTP_202_ACCEPTED)

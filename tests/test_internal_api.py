@@ -86,3 +86,40 @@ def test_unknown_task_is_404():
     missing = "00000000-0000-0000-0000-000000000000"
     response = client.post(f"/internal/tasks/{missing}/events", headers=AUTH, json=_event(missing))
     assert response.status_code == 404
+
+
+def test_task_submission_requires_a_token():
+    """POST /task clones private repos with the runtime's GitHub token and
+    spends Anthropic credits. Unauthenticated, anyone who knows the URL can
+    do both."""
+    response = client.post(
+        "/task", json={"repository": "HemangVora/forge-worker-runtime", "prompt": "probe"}
+    )
+    assert response.status_code == 401
+
+
+def test_task_submission_succeeds_with_a_token(db):
+    from app.models.task import Task
+    from app.models.task_event import TaskEvent
+
+    response = client.post(
+        "/task",
+        headers=AUTH,
+        json={"repository": "HemangVora/forge-worker-runtime", "prompt": "authorized"},
+    )
+    assert response.status_code == 201
+    task_id = response.json()["task_id"]
+
+    db.query(TaskEvent).filter(TaskEvent.task_id == task_id).delete()
+    db.query(Task).filter(Task.id == task_id).delete()
+    db.commit()
+
+
+def test_status_and_events_reads_require_a_token(seeded_task):
+    """Task events carry prompts and provider output from private repos."""
+    assert client.get(f"/tasks/{seeded_task.id}").status_code == 401
+    assert client.get(f"/tasks/{seeded_task.id}/events").status_code == 401
+
+
+def test_health_stays_open_for_platform_probes():
+    assert client.get("/health").status_code == 200

@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_token
 from app.db.session import get_db
 from app.schemas.task import TaskCreateRequest, TaskCreateResponse, TaskStatusResponse
 from app.schemas.task_event import TaskEventResponse
@@ -12,13 +13,21 @@ router = APIRouter(tags=["tasks"])
 
 
 @router.post("/task", response_model=TaskCreateResponse, status_code=status.HTTP_201_CREATED)
-def create_task(payload: TaskCreateRequest, db: Session = Depends(get_db)):
+def create_task(
+    payload: TaskCreateRequest,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_token),
+):
     service = TaskService(db)
     return service.create_task(payload)
 
 
 @router.get("/tasks/{task_id}/events", response_model=list[TaskEventResponse])
-def get_task_events(task_id: UUID, db: Session = Depends(get_db)):
+def get_task_events(
+    task_id: UUID,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_token),
+):
     service = TaskService(db)
     result = service.get_task_events(task_id)
     if result is None:
@@ -27,7 +36,11 @@ def get_task_events(task_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/tasks/{task_id}", response_model=TaskStatusResponse)
-def get_task(task_id: UUID, db: Session = Depends(get_db)):
+def get_task(
+    task_id: UUID,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_token),
+):
     service = TaskService(db)
     result = service.get_task_status(task_id)
     if result is None:
